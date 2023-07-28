@@ -1,7 +1,7 @@
 import { CSVLoader } from 'langchain/document_loaders/fs/csv';
 import { FaissStore } from 'langchain/vectorstores/faiss';
 import { GoogleVertexAIEmbeddings } from 'langchain/embeddings/googlevertexai';
-import { PromptTemplate } from 'langchain/prompts';
+import { BaseExampleSelector, PromptTemplate } from 'langchain/prompts';
 import { ChatGoogleVertexAI } from 'langchain/chat_models/googlevertexai';
 import { LLMChain } from 'langchain/chains';
 import axios from 'axios';
@@ -104,3 +104,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse("Internal Error", { status: 500 });
   }
 }
+
+// CURL EXAMPLE
+
+// curl "http://localhost:3000/api/knowledge?csvurls=https://raw.githubusercontent.com/Papaeske/next13-ai-saas/main/customer_responses.csv&message=Hello%20World"
