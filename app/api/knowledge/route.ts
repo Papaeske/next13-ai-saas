@@ -1,16 +1,15 @@
-const express = require('express');
-const axios = require('axios');
-const { CSVLoader } = require('langchain/document_loaders/fs/csv');
-const { FaissStore } = require('langchain/vectorstores/faiss');
-const { GoogleVertexAIEmbeddings } = require('langchain/embeddings/googlevertexai');
-const { PromptTemplate } = require('langchain/prompts');
-const { ChatGoogleVertexAI } = require('langchain/chat_models/googlevertexai');
-const { LLMChain } = require('langchain/chains');
-
-const app = express();
-const port = 3000;
+import { CSVLoader } from 'langchain/document_loaders/fs/csv';
+import { FaissStore } from 'langchain/vectorstores/faiss';
+import { GoogleVertexAIEmbeddings } from 'langchain/embeddings/googlevertexai';
+import { PromptTemplate } from 'langchain/prompts';
+import { ChatGoogleVertexAI } from 'langchain/chat_models/googlevertexai';
+import { LLMChain } from 'langchain/chains';
+import axios from 'axios';
+import { NextResponse, NextMiddleware, NextRequest } from 'next/server';
 
 class Document {
+  pageContent: any;
+  metadata: any;
   constructor(pageContent, metadata) {
     this.pageContent = pageContent;
     this.metadata = metadata;
@@ -75,18 +74,17 @@ async function generateResponse(llm, prompt, variables) {
   return await chain.call(variables);
 }
 
-// Express API endpoint to handle the main process
-app.get('/process', async (req, res) => {
-  const csvUrls = req.query.csvurls; // Comma-separated URLs as a string
-  const message = req.query.message;
-  const topK = 3; // You can adjust the topK value as needed
-
+export async function GET(req: NextRequest) {
   try {
-    const urlsArray = csvUrls.split(','); // Split the comma-separated string into an array of URLs
+    const csvUrls = req.nextUrl.searchParams.get('csvurls') as string;
+    const message = req.nextUrl.searchParams.get('message') as string;
+    const topK = 3; 
+
+    const urlsArray = csvUrls.split(',');
     const csvResponses = await Promise.all(urlsArray.map(url => axios.get(url)));
     const documents = await Promise.all(csvResponses.map(response => loadDocumentsFromCSV(response.data)));
 
-    const allDocuments = documents.flat(); // Flatten the array of arrays
+    const allDocuments = documents.flat();
 
     const db = await createFaissStoreWithEmbeddings(allDocuments);
     const result = await performSimilaritySearch(db, message, topK);
@@ -99,20 +97,10 @@ app.get('/process', async (req, res) => {
 
     const variables = { message, best_practice: result };
     const response = await generateResponse(llm, prompt, variables);
-    res.json({ response: response.text });
+
+    return NextResponse.json({ response: response.text });
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ error: 'An error occurred while processing the request.' });
+    return new NextResponse("Internal Error", { status: 500 });
   }
-});
-
-// Start the Express server
-app.listen(port, () => {
-  console.log(`Express server listening on port ${port}`);
-});
-
-// CURL EXAMPLE:
-
-// curl -G 'http://localhost:3000/process' \
-//      --data-urlencode 'csvurls=https://raw.githubusercontent.com/Papaeske/saas/main/customer_responses.csv,https://raw.githubusercontent.com/Papaeske/saas/main/customer_responses.csv' \
-//      --data-urlencode 'message=Your customer question or message her
+}
