@@ -1,13 +1,12 @@
 "use client";
 
+import React, { useState } from "react";
 import * as z from "zod";
-import axios from "axios";
-import { MessageSquare, Brain } from "lucide-react";
+import { Brain } from "lucide-react";
+import { Loader } from "@/components/loader";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { ChatCompletionRequestMessage } from "openai";
 
 import { BotAvatar } from "@/components/bot-avatar";
 import { Heading } from "@/components/heading";
@@ -15,38 +14,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
-import { cn } from "@/lib/utils";
-import { Loader } from "@/components/loader";
-import { UserAvatar } from "@/components/user-avatar";
-import { Empty } from "@/components/ui/empty";
 import { useProModal } from "@/hooks/use-pro-modal";
 
-import { formSchema } from "./constants";
+import { Empty } from "@/components/ui/empty";
+import { cn } from "@/lib/utils";
+
+interface APIResponse {
+  data: string;
+}
+
+// Step 1: Update the formSchema interface to include csvurls field
+const formSchema = z.object({
+  prompt: z.string(),
+  csvurls: z.string(), // Add csvurls field to the schema
+});
 
 const KnowledgePage = () => {
   const router = useRouter();
   const proModal = useProModal();
-  const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      prompt: ""
-    }
+      prompt: "",
+      csvurls: "", // Initialize the csvurls field with an empty string
+    },
   });
 
+  const [apiResponse, setApiResponse] = useState<APIResponse | null>(null);
   const isLoading = form.formState.isSubmitting;
-  
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const userMessage: ChatCompletionRequestMessage = { role: "user", content: values.prompt };
-      const newMessages = [...messages, userMessage];
-      
-      const response = await fetch('/api/process?csvurls=https://raw.githubusercontent.com/Papaeske/saas/main/customer_responses.csv&message=RefundPolicy?');
+      const { prompt, csvurls } = form.getValues(); // Get the form values
+      const response = await fetch(
+        `/api/knowledge?csvurls=${encodeURIComponent(csvurls)}&message=${encodeURIComponent(prompt)}`
+      );
+
       const data = await response.json();
-      console.log(data)
-      // setMessages((current) => [...current, userMessage, response.data]);
-      
+      console.log(data);
+      setApiResponse(data);
+
       form.reset();
     } catch (error: any) {
       if (error?.response?.status === 403) {
@@ -57,9 +65,9 @@ const KnowledgePage = () => {
     } finally {
       router.refresh();
     }
-  }
+  };
 
-  return ( 
+  return (
     <div>
       <Heading
         title="Knowledge Base"
@@ -71,8 +79,8 @@ const KnowledgePage = () => {
       <div className="px-4 lg:px-8">
         <div>
           <Form {...form}>
-            <form 
-              onSubmit={form.handleSubmit(onSubmit)} 
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
               className="
                 rounded-lg 
                 border 
@@ -86,6 +94,23 @@ const KnowledgePage = () => {
                 gap-2
               "
             >
+              {/* Step 2: Add the new form input for csvurls */}
+              <FormField
+                name="csvurls"
+                render={({ field }) => (
+                  <FormItem className="col-span-12 lg:col-span-10">
+                    <FormControl className="m-0 p-0">
+                      <Input
+                        className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
+                        disabled={isLoading}
+                        placeholder="CSV URL"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {/* Existing form input for prompt */}
               <FormField
                 name="prompt"
                 render={({ field }) => (
@@ -93,8 +118,8 @@ const KnowledgePage = () => {
                     <FormControl className="m-0 p-0">
                       <Input
                         className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
-                        disabled={isLoading} 
-                        placeholder="How do I calculate the radius of a circle?" 
+                        disabled={isLoading}
+                        placeholder="How do I calculate the radius of a circle?"
                         {...field}
                       />
                     </FormControl>
@@ -113,30 +138,20 @@ const KnowledgePage = () => {
               <Loader />
             </div>
           )}
-          {messages.length === 0 && !isLoading && (
-            <Empty label="No conversation started." />
+          {apiResponse === null && !isLoading && <Empty label="Ask Away!" />}
+          {apiResponse && (
+            <div
+              key={apiResponse?.data}
+              className={cn("p-8 w-full flex items-start gap-x-8 rounded-lg", "bg-muted")}
+            >
+              <BotAvatar />
+              <p className="text-sm">{apiResponse?.data}</p>
+            </div>
           )}
-          <div className="flex flex-col-reverse gap-y-4">
-            {messages.map((message) => (
-              <div 
-                key={message.content} 
-                className={cn(
-                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
-                  message.role === "user" ? "bg-white border border-black/10" : "bg-muted",
-                )}
-              >
-                {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-                <p className="text-sm">
-                  {message.content}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>
-   );
-}
- 
-export default KnowledgePage;
+  );
+};
 
+export default KnowledgePage;
