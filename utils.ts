@@ -30,7 +30,7 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
     if (queryResponse.matches.length) {
       const llm = new GoogleVertexAI({ model: 'text-bison' });
       const template =
-        'You are a customer support bot, you will answer questions based ONLY and i mean only on knowledge, so if you do not find answer in knowledge, tell customer to contact support. Here is knowledge: {best_practice}. Now answer this question: {message}';
+        'You are a customer support bot, you will answer questions based ONLY and i mean only on knowledge, so if you do not find answer in knowledge, tell customer to contact support. Here is knowledge: {best_practice}. Now answer this question: {message}. Also do not respond if content of question has nothing to do with customer supportor knowledge';
       const prompt = new PromptTemplate({ inputVariables: ['message', 'best_practice'], template: template });
   
       const chain = new LLMChain({ llm, prompt });
@@ -66,7 +66,8 @@ export const createPineconeIndex = async (
     console.log(`Creating index.... please wait for it to finish initializing.`);
     await new Promise((resolve) => setTimeout(resolve, timeout));
   } else {
-    console.log(`"${indexName}" already exists.`);
+    console.log(`${indexName}" already exists.`);
+    return `"${indexName}" already exists.`;
   }
 };
 

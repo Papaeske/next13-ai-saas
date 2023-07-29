@@ -21,6 +21,7 @@ const formSchema = z.object({
   index: z.string(),
   prompt: z.string(),
   csvurls: z.string(),
+  createindex: z.string(), // Add createindex to the form schema
 });
 
 const KnowledgePage = () => {
@@ -31,17 +32,18 @@ const KnowledgePage = () => {
       index: "",
       prompt: "",
       csvurls: "",
+      createindex: "",
     },
   });
 
   const [apiResponse, setApiResponse] = useState<{ data: string } | null>(null);
   const isLoading = form.formState.isSubmitting;
 
-  const onSubmit = async () => {
+  const queryIndex = async () => {
     try {
-      const { index, prompt, csvurls } = form.getValues();
+      const { index, prompt } = form.getValues();
       const response = await fetch(
-        `/api/knowledge?csvurls=${encodeURIComponent(csvurls)}&message=${encodeURIComponent(prompt)}&index=${encodeURIComponent(index)}`
+        `/api/knowledge?purpose=query&message=${encodeURIComponent(prompt)}&index=${encodeURIComponent(index)}`
       );
 
       const data = await response.json();
@@ -56,7 +58,30 @@ const KnowledgePage = () => {
         toast.error("Something went wrong.");
       }
     } finally {
-      router.refresh();
+
+    }
+  };
+
+  const createIndex = async () => {
+    try {
+      const { createindex, csvurls } = form.getValues();
+      const response = await fetch(
+        `/api/knowledge?purpose=create&csvurls=${encodeURIComponent(csvurls)}&index=${encodeURIComponent(createindex)}`
+      );
+
+      const data = await response.json();
+      console.log(data);
+      setApiResponse(data);
+
+      // form.reset();
+    } catch (error: any) {
+      if (error?.response?.status === 403) {
+        useProModal().onOpen();
+      } else {
+        toast.error("Something went wrong.");
+      }
+    } finally {
+
     }
   };
 
@@ -70,14 +95,14 @@ const KnowledgePage = () => {
         bgColor="bg-violet-500/10"
       />
       <div className="px-4 lg:px-8">
-        <div>
+      <div>
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={form.handleSubmit(createIndex)}
               className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
             >
               <FormField
-                name="index"
+                name="createindex"
                 render={({ field }) => (
                   <FormItem className="col-span-12 lg:col-span-10">
                     <FormControl className="m-0 p-0">
@@ -106,6 +131,33 @@ const KnowledgePage = () => {
                   </FormItem>
                 )}
               />
+              <Button className="col-span-12 lg:col-span-2 w-full" type="submit" disabled={isLoading} size="icon">
+                Create
+              </Button>
+            </form>
+          </Form>
+        </div>
+        <div>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(queryIndex)}
+              className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
+            >
+              <FormField
+                name="index"
+                render={({ field }) => (
+                  <FormItem className="col-span-12 lg:col-span-10">
+                    <FormControl className="m-0 p-0">
+                      <Input
+                        className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
+                        disabled={isLoading}
+                        placeholder="Index Name"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
               <FormField
                 name="prompt"
                 render={({ field }) => (
@@ -122,7 +174,7 @@ const KnowledgePage = () => {
                 )}
               />
               <Button className="col-span-12 lg:col-span-2 w-full" type="submit" disabled={isLoading} size="icon">
-                Generate
+                Query
               </Button>
             </form>
           </Form>
