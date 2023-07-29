@@ -25,15 +25,12 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
     });
   
     console.log(`Found ${queryResponse.matches.length} matches...`);
-
-    console.log(queryResponse.matches)
-
     console.log(`Asking question: ${message}...`);
   
     if (queryResponse.matches.length) {
       const llm = new GoogleVertexAI({ model: 'text-bison' });
       const template =
-        'You are a world class business development representat1ve. If you do not find answer in dataset just tell prosepct to contact customer support: I will share a prospect\'s message with you and you will give me the best answer that I should send to this prospect based on past best practies, and you will follow ALL of the rules below: 1/ Response should be very similar or even identical to the past best practies, in terms of length, ton of voice, logical arguments and other details 2/ If the best practice are irrelevant, then try to mimic the style of the best practice Below is a message I received from the prospect: {message} Here is a list of best practies of how we normally respond to prospect in similar scenario {best_practice} Please write the best response that I should send to this prospect (If you do not know answer just tell prosepct to contact customer support):';
+        'You are a customer support bot, you will answer questions based ONLY and i mean only on knowledge, so if you do not find answer in knowledge, tell customer to contact support. Here is knowledge: {best_practice}. Now answer this question: {message}';
       const prompt = new PromptTemplate({ inputVariables: ['message', 'best_practice'], template: template });
   
       const chain = new LLMChain({ llm, prompt });

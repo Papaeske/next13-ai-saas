@@ -38,6 +38,7 @@ async function loadDocumentsFromCSV(csvData) {
 
 export async function GET(req: NextRequest) {
   try {
+    const index = req.nextUrl.searchParams.get('index')  as string;
     const csvUrls = req.nextUrl.searchParams.get('csvurls') as string;
     const message = req.nextUrl.searchParams.get('message')  as string;
     const urlsArray = csvUrls.split(',');
@@ -63,13 +64,13 @@ export async function GET(req: NextRequest) {
     })
   
     try {
-      await createPineconeIndex(client, indexName, vectorDimensions)
-      await updatePinecone(client, indexName, docs)
+      await createPineconeIndex(client, index, vectorDimensions)
+      await updatePinecone(client, index, docs)
     } catch (err) {
       console.log('error: ', err)
     }
   
-    const text = await queryPineconeVectorStoreAndQueryLLM(client, indexName, message)
+    const text = await queryPineconeVectorStoreAndQueryLLM(client, index, message)
   
     return NextResponse.json({
       data: text

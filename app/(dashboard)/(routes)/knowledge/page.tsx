@@ -1,64 +1,57 @@
-"use client";
+"use client"
 
 import React, { useState } from "react";
 import * as z from "zod";
 import { Brain } from "lucide-react";
-import { Loader } from "@/components/loader";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
-
 import { BotAvatar } from "@/components/bot-avatar";
 import { Heading } from "@/components/heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Form, FormField, FormControl, FormItem } from "@/components/ui/form";
 import { useProModal } from "@/hooks/use-pro-modal";
-
 import { Empty } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
+import { Loader } from "@/components/loader";
 
-interface APIResponse {
-  data: string;
-}
-
-// Step 1: Update the formSchema interface to include csvurls field
 const formSchema = z.object({
+  index: z.string(),
   prompt: z.string(),
-  csvurls: z.string(), // Add csvurls field to the schema
+  csvurls: z.string(),
 });
 
 const KnowledgePage = () => {
   const router = useRouter();
-  const proModal = useProModal();
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      index: "",
       prompt: "",
-      csvurls: "", // Initialize the csvurls field with an empty string
+      csvurls: "",
     },
   });
 
-  const [apiResponse, setApiResponse] = useState<APIResponse | null>(null);
+  const [apiResponse, setApiResponse] = useState<{ data: string } | null>(null);
   const isLoading = form.formState.isSubmitting;
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async () => {
     try {
-      const { prompt, csvurls } = form.getValues(); // Get the form values
+      const { index, prompt, csvurls } = form.getValues();
       const response = await fetch(
-        `/api/knowledge?csvurls=${encodeURIComponent(csvurls)}&message=${encodeURIComponent(prompt)}`
+        `/api/knowledge?csvurls=${encodeURIComponent(csvurls)}&message=${encodeURIComponent(prompt)}&index=${encodeURIComponent(index)}`
       );
 
       const data = await response.json();
       console.log(data);
       setApiResponse(data);
 
-      form.reset();
+      // form.reset();
     } catch (error: any) {
       if (error?.response?.status === 403) {
-        proModal.onOpen();
+        useProModal().onOpen();
       } else {
         toast.error("Something went wrong.");
       }
@@ -81,20 +74,23 @@ const KnowledgePage = () => {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="
-                rounded-lg 
-                border 
-                w-full 
-                p-4 
-                px-3 
-                md:px-6 
-                focus-within:shadow-sm
-                grid
-                grid-cols-12
-                gap-2
-              "
+              className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
             >
-              {/* Step 2: Add the new form input for csvurls */}
+              <FormField
+                name="index"
+                render={({ field }) => (
+                  <FormItem className="col-span-12 lg:col-span-10">
+                    <FormControl className="m-0 p-0">
+                      <Input
+                        className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
+                        disabled={isLoading}
+                        placeholder="Index Name"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
               <FormField
                 name="csvurls"
                 render={({ field }) => (
@@ -110,7 +106,6 @@ const KnowledgePage = () => {
                   </FormItem>
                 )}
               />
-              {/* Existing form input for prompt */}
               <FormField
                 name="prompt"
                 render={({ field }) => (
@@ -141,11 +136,11 @@ const KnowledgePage = () => {
           {apiResponse === null && !isLoading && <Empty label="Ask Away!" />}
           {apiResponse && (
             <div
-              key={apiResponse?.data}
+              key={apiResponse.data}
               className={cn("p-8 w-full flex items-start gap-x-8 rounded-lg", "bg-muted")}
             >
               <BotAvatar />
-              <p className="text-sm">{apiResponse?.data}</p>
+              <p className="text-sm">{apiResponse.data}</p>
             </div>
           )}
         </div>
