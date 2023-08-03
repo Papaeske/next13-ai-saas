@@ -30,7 +30,7 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
     if (queryResponse.matches.length) {
       const llm = new GoogleVertexAI({ model: 'text-bison' });
       const template =
-        'You are a customer support bot, you will answer questions based ONLY and i mean only on knowledge, so if you do not find answer in knowledge, tell customer to contact support. Here is knowledge: {best_practice}. Now answer this question: {message}. Also do not respond if content of question has nothing to do with customer supportor knowledge';
+        'You are a customer support bot, you will answer questions based ONLY and i mean only on knowledge, so if you do not find answer in knowledge, tell customer to contact support. Here is knowledge: {best_practice}. Now answer this question: {message}.';
       const prompt = new PromptTemplate({ inputVariables: ['message', 'best_practice'], template: template });
   
       const chain = new LLMChain({ llm, prompt });

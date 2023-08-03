@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
     
       try {
         const text = await createPineconeIndex(client, index, vectorDimensions)
-        //await updatePinecone(client, index, docs)
+        await updatePinecone(client, index, docs)
 
         return NextResponse.json({
           data: text
