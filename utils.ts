@@ -1,4 +1,5 @@
 import { GoogleVertexAIEmbeddings } from 'langchain/embeddings/googlevertexai'
+import { HuggingFaceInferenceEmbeddings } from "langchain/embeddings/hf";
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
 import { GoogleVertexAI } from 'langchain/llms/googlevertexai'
 import { LLMChain, loadQAStuffChain } from 'langchain/chains'
@@ -30,7 +31,7 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
     if (queryResponse.matches.length) {
       const llm = new GoogleVertexAI({ model: 'text-bison' });
       const template =
-        'You are a customer support bot, you will answer questions based ONLY and i mean only on knowledge, so if you do not find answer in knowledge, tell customer to contact support. Here is knowledge: {best_practice}. Now answer this question: {message}.';
+        'You are a realstate finder Chatbot. You have this list of properties, here: {best_practice}. You will find the property that fits the user best from this list {best_practice}. You need to display property info like this: Name: Price: Square Feet: . Now answer this question: {message}. Remember to use this list {best_practice} to answer users question';
       const prompt = new PromptTemplate({ inputVariables: ['message', 'best_practice'], template: template });
   
       const chain = new LLMChain({ llm, prompt });

@@ -13,6 +13,7 @@
     "@clerk/nextjs": "^4.21.15",
     "@emotion/react": "^11.11.1",
     "@hookform/resolvers": "^3.1.1",
+    "@huggingface/inference": "^1.8.0",
     "@mantine/carousel": "^6.0.17",
     "@mantine/core": "^6.0.17",
     "@mantine/dates": "^6.0.17",

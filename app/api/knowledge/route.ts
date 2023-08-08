@@ -6,7 +6,7 @@ import {
   queryPineconeVectorStoreAndQueryLLM
 } from '../../../utils'
 import { indexName } from '../../../config'
-
+import { DirectoryLoader } from 'langchain/document_loaders/fs/directory'
 import axios from 'axios';
 import { NextResponse, NextRequest } from 'next/server';
 
@@ -61,8 +61,15 @@ export async function GET(req: NextRequest) {
       
       const blob = new Blob([combinedData], { type: 'text/csv' });
   
-      const loader = new TextLoader(blob)
+      // const loader = new TextLoader(blob)
   
+      // const docs = await loader.load()
+
+      const loader = new DirectoryLoader('./documents', {
+        ".txt": (path) => new TextLoader(path),
+        ".md": (path) => new TextLoader(path)
+      })
+    
       const docs = await loader.load()
   
       const vectorDimensions = 768
